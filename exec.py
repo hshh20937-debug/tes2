@@ -3,122 +3,141 @@ import sys
 import json
 import time
 import os
-from playwright.sync_api import sync_playwright
+import traceback
 
 def bypass_and_get_cookies(target_url):
-    with sync_playwright() as p:
-        browser = p.chromium.launch(
-            headless=True,
-            args=[
-                '--no-sandbox',
-                '--disable-setuid-sandbox',
-                '--disable-dev-shm-usage',
-                '--disable-gpu',
-                '--disable-web-security',
-                '--disable-features=IsolateOrigins,site-per-process',
-            ]
-        )
+    try:
+        from playwright.sync_api import sync_playwright
+    except ImportError:
+        return {"cf_clearance": "", "user_agent": "", "error": "playwright not installed"}
 
-        context = browser.new_context(
-            viewport={"width": 390, "height": 844},
-            user_agent="Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Mobile Safari/537.36",
-            locale="id-ID",
-            timezone_id="Asia/Jakarta"
-        )
+    try:
+        with sync_playwright() as p:
+            browser = p.chromium.launch(
+                headless=True,
+                args=[
+                    '--no-sandbox',
+                    '--disable-setuid-sandbox',
+                    '--disable-dev-shm-usage',
+                    '--disable-gpu',
+                    '--disable-web-security',
+                    '--disable-features=IsolateOrigins,site-per-process',
+                    '--disable-blink-features=AutomationControlled',
+                    '--single-process',
+                ]
+            )
 
-        page = context.new_page()
+            context = browser.new_context(
+                viewport={"width": 390, "height": 844},
+                user_agent="Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Mobile Safari/537.36",
+                locale="id-ID",
+                timezone_id="Asia/Jakarta"
+            )
 
-        try:
-            page.add_init_script("""
-                Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
-                Object.defineProperty(navigator, 'plugins', { get: () => [1, 2, 3, 4, 5] });
-                Object.defineProperty(navigator, 'languages', { get: () => ['id-ID', 'id', 'en-US', 'en'] });
-            """)
-
-            page.goto(target_url, wait_until="domcontentloaded", timeout=45000)
-            time.sleep(2)
-            page.wait_for_load_state("networkidle", timeout=30000)
+            page = context.new_page()
 
             try:
-                page.wait_for_function(
-                    "() => !document.body.innerText.includes('Just a moment')",
-                    timeout=60000
-                )
-            except:
-                pass
+                page.add_init_script("""
+                    Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
+                    Object.defineProperty(navigator, 'plugins', { get: () => [1, 2, 3, 4, 5] });
+                    Object.defineProperty(navigator, 'languages', { get: () => ['id-ID', 'id', 'en-US', 'en'] });
+                    Object.defineProperty(navigator, 'platform', { get: () => 'Linux armv8l' });
+                """)
 
-            time.sleep(2)
+                page.goto(target_url, wait_until="domcontentloaded", timeout=30000)
+                time.sleep(3)
+                page.wait_for_load_state("networkidle", timeout=30000)
 
-            cookies = context.cookies()
-            cf_value = ""
-            for c in cookies:
-                if c['name'] == 'cf_clearance':
-                    cf_value = c['value']
-                    break
+                for _ in range(30):
+                    text = page.evaluate("() => document.body.innerText")
+                    if "Just a moment" not in text:
+                        break
+                    time.sleep(2)
 
-            ua = page.evaluate("() => navigator.userAgent")
+                time.sleep(2)
 
-            return {
-                "cf_clearance": f"cf_clearance={cf_value}" if cf_value else "",
-                "user_agent": ua
-            }
+                cookies = context.cookies()
+                cf_value = ""
+                for c in cookies:
+                    if c['name'] == 'cf_clearance':
+                        cf_value = c['value']
+                        break
 
-        except Exception as e:
-            return {"cf_clearance": "", "user_agent": "", "error": str(e)}
-        finally:
-            browser.close()
+                ua = page.evaluate("() => navigator.userAgent")
+                browser.close()
+
+                return {
+                    "cf_clearance": f"cf_clearance={cf_value}" if cf_value else "",
+                    "user_agent": ua
+                }
+
+            except Exception as e:
+                browser.close()
+                return {"cf_clearance": "", "user_agent": "", "error": traceback.format_exc()}
+
+    except Exception as e:
+        return {"cf_clearance": "", "user_agent": "", "error": f"browser launch failed: {str(e)}"}
 
 
 def get_fresh_cookies(target_url):
-    with sync_playwright() as p:
-        browser = p.chromium.launch(
-            headless=True,
-            args=[
-                '--no-sandbox',
-                '--disable-setuid-sandbox',
-                '--disable-dev-shm-usage',
-                '--disable-gpu',
-            ]
-        )
+    try:
+        from playwright.sync_api import sync_playwright
+    except ImportError:
+        return {"error": "playwright not installed"}
 
-        context = browser.new_context(
-            viewport={"width": 390, "height": 844},
-            locale="id-ID",
-            timezone_id="Asia/Jakarta"
-        )
+    try:
+        with sync_playwright() as p:
+            browser = p.chromium.launch(
+                headless=True,
+                args=[
+                    '--no-sandbox',
+                    '--disable-setuid-sandbox',
+                    '--disable-dev-shm-usage',
+                    '--disable-gpu',
+                    '--disable-blink-features=AutomationControlled',
+                    '--single-process',
+                ]
+            )
 
-        page = context.new_page()
+            context = browser.new_context(
+                viewport={"width": 390, "height": 844},
+                locale="id-ID",
+                timezone_id="Asia/Jakarta"
+            )
 
-        try:
-            page.add_init_script("""
-                Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
-                Object.defineProperty(navigator, 'plugins', { get: () => [1, 2, 3, 4, 5] });
-            """)
-
-            page.goto(target_url, wait_until="domcontentloaded", timeout=45000)
-            time.sleep(2)
-            page.wait_for_load_state("networkidle", timeout=30000)
+            page = context.new_page()
 
             try:
-                page.wait_for_function(
-                    "() => !document.body.innerText.includes('Just a moment')",
-                    timeout=60000
-                )
-            except:
-                pass
+                page.add_init_script("""
+                    Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
+                    Object.defineProperty(navigator, 'plugins', { get: () => [1, 2, 3, 4, 5] });
+                """)
 
-            time.sleep(2)
+                page.goto(target_url, wait_until="domcontentloaded", timeout=30000)
+                time.sleep(3)
+                page.wait_for_load_state("networkidle", timeout=30000)
 
-            cookies = context.cookies()
-            cookie_str = "; ".join([f"{c['name']}={c['value']}" for c in cookies])
-            ua = page.evaluate("() => navigator.userAgent")
+                for _ in range(30):
+                    text = page.evaluate("() => document.body.innerText")
+                    if "Just a moment" not in text:
+                        break
+                    time.sleep(2)
 
-            return {"cookie": cookie_str, "user_agent": ua}
+                time.sleep(2)
 
-        except Exception as e:
-            return {"error": str(e)}
-        finally:
-            browser.close()
+                cookies = context.cookies()
+                cookie_str = "; ".join([f"{c['name']}={c['value']}" for c in cookies])
+                ua = page.evaluate("() => navigator.userAgent")
+                browser.close()
+
+                return {"cookie": cookie_str, "user_agent": ua}
+
+            except Exception as e:
+                browser.close()
+                return {"error": traceback.format_exc()}
+
+    except Exception as e:
+        return {"error": f"browser launch failed: {str(e)}"}
 
 
 if __name__ == "__main__":
