@@ -15,17 +15,14 @@ def bypass_and_get_cookies(target_url):
             delay=5
         )
 
-        # Make a GET with detailed response info
         resp = scraper.get(target_url, timeout=30, allow_redirects=True)
 
-        # Check raw response headers for Set-Cookie
         set_cookies = resp.raw._original_response.headers.get_all('Set-Cookie') if hasattr(resp.raw, '_original_response') and resp.raw._original_response else []
         if not set_cookies:
             set_cookies = resp.headers.get_all('Set-Cookie') if hasattr(resp.headers, 'get_all') else []
         if not set_cookies and 'Set-Cookie' in resp.headers:
             set_cookies = [resp.headers['Set-Cookie']]
 
-        # Get all cookies from the session
         all_cookies = {}
         for c in scraper.cookies:
             all_cookies[c.name] = {"value": c.value, "domain": c.domain, "path": c.path}
