@@ -132,15 +132,22 @@ function slider($app_id, $public_key, $version, $reff, $apikey) {
 }
 
 function bypassCloudflare(&$config, $configFile, $target) {
-    echo putih . "Cloudflare! wait.. ";
+    echo putih . "Cloudflare! wait..\n";
     $python_bin = trim(shell_exec("which python3 2>/dev/null") ?: shell_exec("which python 2>/dev/null") ?: "/usr/local/bin/python");
     $python_bin = trim($python_bin);
+    echo putih . "Python: " . $python_bin . "\n";
+    $test_out = trim(shell_exec($python_bin . " -c \"print('PYOK')\" 2>&1") ?? '');
+    if ($test_out !== 'PYOK') {
+        echo merah . "Python test failed: " . $test_out . "\n";
+        echo putih."------------------------------------------------------\n";
+        return false;
+    }
+    echo hijau . "Python OK\n";
     $python_cmd = $python_bin . " exec.py " . escapeshellarg($target) . " 2>&1";
-    $output = shell_exec($python_cmd);
-    $output = trim($output ?? '');
+    $output = trim(shell_exec($python_cmd) ?? '');
     $data_bypass = json_decode($output, true);
     if (!$data_bypass) {
-        echo merah . "Raw output: " . substr($output, 0, 300) . "\n";
+        echo merah . "Invalid JSON (" . strlen($output) . " bytes): " . substr($output, 0, 500) . "\n";
         echo putih."------------------------------------------------------\n";
         return false;
     }
@@ -208,6 +215,13 @@ function pickCurrency($currencies, $lastUsed = null) {
     }
     return $currencies[array_rand($currencies)];
 }
+
+$python_bin = trim(shell_exec("which python3 2>/dev/null") ?: shell_exec("which python 2>/dev/null") ?: "/usr/local/bin/python");
+$python_bin = trim($python_bin);
+$py_test = trim(shell_exec($python_bin . " -c \"import cloudscraper; print('OK')\" 2>&1") ?? '');
+echo putih . "cloudscraper: " . ($py_test === 'OK' ? hijau . "OK" : merah . $py_test) . "\n";
+echo putih . "-----------------------------------------------------\n";
+sleep(2);
 
 login:
 $config = getConfig($configFile);
