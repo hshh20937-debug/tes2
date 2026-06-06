@@ -44,11 +44,10 @@ def bypass_and_get_cookies(target_url):
                     Object.defineProperty(navigator, 'platform', { get: () => 'Linux armv8l' });
                 """)
 
-                page.goto(target_url, wait_until="domcontentloaded", timeout=30000)
-                time.sleep(3)
-                page.wait_for_load_state("networkidle", timeout=30000)
+                page.goto(target_url, wait_until="domcontentloaded", timeout=45000)
+                time.sleep(5)
 
-                for _ in range(30):
+                for _ in range(45):
                     text = page.evaluate("() => document.body.innerText")
                     if "Just a moment" not in text:
                         break
@@ -113,11 +112,10 @@ def get_fresh_cookies(target_url):
                     Object.defineProperty(navigator, 'plugins', { get: () => [1, 2, 3, 4, 5] });
                 """)
 
-                page.goto(target_url, wait_until="domcontentloaded", timeout=30000)
-                time.sleep(3)
-                page.wait_for_load_state("networkidle", timeout=30000)
+                page.goto(target_url, wait_until="domcontentloaded", timeout=45000)
+                time.sleep(5)
 
-                for _ in range(30):
+                for _ in range(45):
                     text = page.evaluate("() => document.body.innerText")
                     if "Just a moment" not in text:
                         break
