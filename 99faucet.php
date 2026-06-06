@@ -181,6 +181,11 @@ function bypassCloudflare(&$config, $configFile, $target) {
         return true;
     } else {
         echo merah . "Error Bypass\n";
+        if (isset($data_bypass['status'])) echo putih . "HTTP " . $data_bypass['status'] . "\n";
+        if (isset($data_bypass['cookies_found'])) echo putih . "Cookies: " . implode(", ", $data_bypass['cookies_found']) . "\n";
+        if (!empty($data_bypass['body_preview'])) echo putih . "Body: " . substr($data_bypass['body_preview'], 0, 300) . "\n";
+        if (!empty($data_bypass['has_justmoment'])) echo merah . "Still seeing Just a moment\n";
+        if (!empty($data_bypass['has_challenge'])) echo merah . "Challenge page detected\n";
         echo putih."------------------------------------------------------\n";
         return false;
     }
