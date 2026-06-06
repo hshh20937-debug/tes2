@@ -133,9 +133,22 @@ function slider($app_id, $public_key, $version, $reff, $apikey) {
 
 function bypassCloudflare(&$config, $configFile, $target) {
     echo putih . "Cloudflare! wait.. ";
-    $python_cmd = "python exec.py " . $target ." 2>/dev/null";
-    $output = exec($python_cmd);
+    $python_bin = trim(shell_exec("which python3 2>/dev/null") ?: shell_exec("which python 2>/dev/null") ?: "/usr/local/bin/python");
+    $python_bin = trim($python_bin);
+    $python_cmd = $python_bin . " exec.py " . escapeshellarg($target) . " 2>&1";
+    $output = shell_exec($python_cmd);
+    $output = trim($output ?? '');
     $data_bypass = json_decode($output, true);
+    if (!$data_bypass) {
+        echo merah . "Raw output: " . substr($output, 0, 300) . "\n";
+        echo putih."------------------------------------------------------\n";
+        return false;
+    }
+    if (isset($data_bypass['error']) && !empty($data_bypass['error'])) {
+        echo merah . "Python error: " . $data_bypass['error'] . "\n";
+        echo putih."------------------------------------------------------\n";
+        return false;
+    }
     if (isset($data_bypass['cf_clearance']) && !empty($data_bypass['cf_clearance'])) {
         $full_new_cf = $data_bypass['cf_clearance'];
         $new_ua = $data_bypass['user_agent'];
